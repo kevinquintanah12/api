@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:glassmorphism/glassmorphism.dart';
+import 'package:flutter/material.dart';
 
 final storage = new FlutterSecureStorage();
 
@@ -15,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _loginUser() async {
     final HttpLink httpLink = HttpLink(
-      'http://127.0.0.1:8000/graphql/',
+      'http://34.125.185.36:9003/graphql/',
     );
 
     final GraphQLClient client = GraphQLClient(
@@ -43,8 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final token = result.data?['tokenAuth']?['token'];
       if (token != null) {
         await storage.write(key: 'token', value: token);
-        
-        // Navegar a la siguiente pantalla después de iniciar sesión
+        _checkToken(); // Verificar el token guardado en el almacenamiento local
         Navigator.pushReplacementNamed(context, '/home');
       } else {
         _showErrorDialog('No se pudo obtener el token. Intente de nuevo.');
@@ -54,15 +55,24 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _checkToken() async {
+    final String? token = await storage.read(key: 'token');
+    if (token != null) {
+      print('Token JWT: $token');
+    } else {
+      print('Token JWT no encontrado en el almacenamiento local.');
+    }
+  }
+
   void _showErrorDialog(String message) {
-    showDialog(
+    showCupertinoDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
+        return CupertinoAlertDialog(
           title: Text('Error'),
           content: Text(message),
           actions: <Widget>[
-            TextButton(
+            CupertinoDialogAction(
               child: Text('Cerrar'),
               onPressed: () {
                 Navigator.of(context).pop();
@@ -76,34 +86,55 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Login'),
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text('Login'),
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            TextField(
-              controller: _usernameController,
-              decoration: InputDecoration(
-                labelText: 'Username',
-              ),
+      child: Center(
+        child: GlassmorphicContainer(
+          width: 300,
+          height: 400,
+          borderRadius: 20,
+          blur: 20,
+          alignment: Alignment.center,
+          border: 2,
+          linearGradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.1),
+              Colors.white.withOpacity(0.1)
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderGradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.5),
+              Colors.white.withOpacity(0.5),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                CupertinoTextField(
+                  controller: _usernameController,
+                  placeholder: 'Username',
+                ),
+                SizedBox(height: 16),
+                CupertinoTextField(
+                  controller: _passwordController,
+                  placeholder: 'Password',
+                  obscureText: true,
+                ),
+                SizedBox(height: 16),
+                CupertinoButton.filled(
+                  child: Text('Login'),
+                  onPressed: _loginUser,
+                ),
+              ],
             ),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Password',
-              ),
-            ),
-            SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: _loginUser,
-              child: Text('Login'),
-            ),
-          ],
+          ),
         ),
       ),
     );
